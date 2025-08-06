@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/index.css">
+  </head>
+  <body>
+    <div class="form-container">
+      <form id="record-form" novalidate>
+        <label for="reference-number">Reference Number <span style="color: red;">*</span></label>
+        <input type="text" id="reference-number" name="reference-number"/>
+        <span class="error-message" id="error-reference-number"></span>
+
+        <label for="name-of-taxable-person">Legal Name of Taxable Person <span style="color: red;">*</span></label>
+        <input type="text" id="name-of-taxable-person" name="name-of-taxable-person"/>
+        <span class="error-message" id="error-name-of-taxable-person"></span>
+
+        <label for="tax-registration-number">Tax Registration Number (TRN) <span style="color: red;">*</span></label>
+        <input type="text" id="tax-registration-number" name="tax-registration-number"/>
+        <span class="error-message" id="error-tax-registration-number"></span>
+
+        <label for="application-date">Application Date <span style="color: red;">*</span></label>
+        <input type="date" id="application-date" name="application-date" required />
+        <span class="error-message" id="error-application-date"></span>
+
+        <label for="fta-notive-of-submission" style="margin-top: 16px; display: block;">FTA Notice of Submission 
+          <span title="Drag and drop your file here, or click “Choose File” to upload the FTA Notice of Submission." style="cursor: help; color: #555;">&#9432;</span>
+          <span style="color: red;">*</span>
+        </label>
+        <input type="file" id="fta-notive-of-submission" name="fta-notive-of-submission" accept=".pdf,.jpg,.jpeg,.png" required />
+        <span class="error-message" id="error-fta-notive-of-submission" style="color: red; font-size: 12px;"></span>
+      </form>
+    </div>
+
+    <!-- Upload overlay/modal -->
+    <div id="upload-buffer" class="upload-overlay hidden" aria-live="polite" role="status">
+    <div class="upload-box">
+        <div class="upload-icon">&#128228;</div>
+        <div class="upload-title" id="upload-title">Uploading your file...</div>
+        <div class="progress-wrapper">
+        <div class="progress-bar-background">
+            <div id="upload-progress" class="progress-bar-fill animate"></div>
+        </div>
+        </div>
+    </div>
+    </div>
+
+    <div>
+      <button class="close-button" onclick="closeWidget()">×</button>
+    </div>
+
+  </body>
+</html>
