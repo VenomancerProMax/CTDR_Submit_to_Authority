@@ -193,7 +193,7 @@ async function update_record(event = null) {
 
 
         // Pass ALL required data to the Deluge function via JSON string
-        const func_name = "ta_ctar_complete_the_process_update_account";
+        const func_name = "ta_ctdr_submit_to_auth_update_account";
         const req_data = {
             "arguments": JSON.stringify({
                 "account_id": safe_account_id,
