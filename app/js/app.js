@@ -1,6 +1,7 @@
 let app_id, account_id;
 let cachedFile = null;
 let cachedBase64 = null;
+let isInitialized = false; // Flag to prevent re-initialization
 
 // --- Core Functions for UI/Error Management ---
 
@@ -31,8 +32,12 @@ function hideUploadBuffer() {
     if (buffer) buffer.classList.add("hidden");
 }
 
+/* * NOTE: closeWidget is generally only used to close the widget without 
+ * proceeding with Blueprint. I'm leaving this here but Blueprint handles 
+ * the close action in the successful flow.
+ */
 async function closeWidget() {
-    await ZOHO.CRM.UI.Popup.closeReload().then(console.log);
+    await ZOHO.CRM.UI.Popup.closeReload().catch(console.error);
 }
 
 // --- Data Fetching and Auto-Population Logic ---
@@ -127,6 +132,11 @@ async function uploadFileToCRM() {
         throw new Error("No cached file for upload.");
     }
 
+    // Explicitly check for app_id before attempting upload
+    if (!app_id) {
+        throw new Error("Application ID (app_id) is missing. Cannot attach file.");
+    }
+
     return await ZOHO.CRM.API.attachFile({
         Entity: "Applications1",
         RecordID: app_id,
@@ -146,6 +156,7 @@ async function update_record(event) {
 
     let hasError = false;
     const submitBtn = document.getElementById("submit_button_id");
+    
     if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = "Submitting...";
@@ -188,7 +199,6 @@ async function update_record(event) {
     }
 
     // --- Blueprint Proceed BLOCKER (CORE LOGIC) ---
-    // If 'hasError' is true, the function returns, preventing submission and Blueprint continuation.
     if (hasError) {
         if (submitBtn) {
             submitBtn.disabled = false;
@@ -199,6 +209,7 @@ async function update_record(event) {
 
     // --- Successful Submission Flow ---
     try {
+        // 1. Update Application Record
         await ZOHO.CRM.API.updateRecord({
             Entity: "Applications1",
             APIData: {
@@ -211,11 +222,8 @@ async function update_record(event) {
         });
 
         console.log("Application record updated successfully.");
-        console.log("Proceeding to account update function...");
-        console.log("Account ID to update:", safe_account_id);
-        console.log("Legal Name of Taxable Person:", taxablePerson);
-        console.log("Corporate Tax TRN:", taxRegNo);
-        // Pass ALL required data to the Deluge function via JSON string
+
+        // 2. Execute Deluge Function (Update Account)
         const func_name = "ta_ctdr_submit_to_auth_update_account";
         const req_data = {
             "arguments": JSON.stringify({
@@ -228,17 +236,31 @@ async function update_record(event) {
         const accountResponse = await ZOHO.CRM.FUNCTIONS.execute(func_name, req_data);
         console.log("Account Update Function Response:", accountResponse);
 
+        // 3. Upload Attachment
         await uploadFileToCRM();
+        console.log("File uploaded successfully.");
 
-        // This is only called if all previous steps succeeded
-        await ZOHO.CRM.BLUEPRINT.proceed();
-        await ZOHO.CRM.UI.Popup.closeReload();
+        // 4. Blueprint Proceed (Trigger Transition)
+        const blueprintResult = await ZOHO.CRM.BLUEPRINT.proceed();
+        console.log("Blueprint Proceed Result:", blueprintResult);
+
+        /* * FIX: Removed the second ZOHO.CRM.UI.Popup.closeReload() call here.
+         * The Blueprint transition (ZOHO.CRM.BLUEPRINT.proceed()) handles the UI
+         * interaction after the transition is complete, which often includes closing 
+         * the pop-up/widget. If we close the widget immediately, the Blueprint 
+         * transition may be interrupted.
+         */
+        
     } catch (error) {
         console.error("Error on final submit:", error);
+        
+        // Re-enable button on error
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.textContent = "Submit";
         }
+        // Show a generic error message if there's a submission issue
+        showError("submit_button_id", "An unexpected error occurred during submission. See console for details.");
     }
 }
 
@@ -248,4 +270,9 @@ document.getElementById("fta-notive-of-submission").addEventListener("change", c
 document.getElementById("record-form").addEventListener("submit", update_record);
 
 
-ZOHO.embeddedApp.init();
+if (!isInitialized) {
+    ZOHO.embeddedApp.init().then(() => {
+        isInitialized = true;
+        console.log("Zoho Embedded App Initialized.");
+    });
+}
